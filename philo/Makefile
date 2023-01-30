@@ -10,4 +10,16 @@
 #                                                                              #
 # **************************************************************************** #
 
+NAME = philo
+CC = gcc
+CFLAGS = -Wall -Wextra -Werror
+SRC = main.c
+OBJ = $(SRC:.c=.o)
 
+all: $(NAME)
+
+$(NAME): $(OBJ)
+	$(CC) $(CFLAGS) -pthread -o $(NAME) $(OBJ)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -pthread -c $< -o $@
