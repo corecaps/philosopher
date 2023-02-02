@@ -13,7 +13,7 @@
 NAME = philo
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
-SRC = main.c
+SRC = main.c utils.c simulation.c
 OBJ = $(SRC:.c=.o)
 
 all: $(NAME)
@@ -21,5 +21,18 @@ all: $(NAME)
 $(NAME): $(OBJ)
 	$(CC) $(CFLAGS) -pthread -o $(NAME) $(OBJ)
 
+debug: CFLAGS += -g
+debug: all
+
 %.o: %.c
 	$(CC) $(CFLAGS) -pthread -c $< -o $@
+
+clean:
+	rm -f $(OBJ)
+
+fclean: clean
+	rm -f $(NAME)
+
+re: fclean all
+
+.PHONY: all clean fclean re
