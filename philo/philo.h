@@ -35,6 +35,8 @@ typedef enum e_state
 } t_state;
 typedef struct s_philo
 {
+	t_args			*sim_params;
+	struct s_philo			*head;
 	pthread_t		philo_id;
 	int				id;
 	pthread_mutex_t	*right_fork;
