@@ -4,9 +4,35 @@
 
 #include "philo.h"
 
+void message(enum e_state action, long int stamp, int id)
+{
+	if (action < THINKING || action > FORK || stamp < 0 || id < 0)
+		return ;
+	if (action == EATING)
+		printf("%ld %d is eating\n", stamp, id);
+	else if (action == SLEEPING)
+		printf("%ld %d is sleeping\n", stamp, id);
+	else if (action == THINKING)
+		printf("%ld %d is thinking\n", stamp, id);
+	else if (action == DEAD)
+		printf("%ld %d died\n", stamp, id);
+	else if (action == FORK)
+		printf("%ld %d has taken a fork\n", stamp, id);
+}
+
+long int get_stamp(struct timeval start)
+{
+	struct timeval	now;
+	gettimeofday(&now,NULL);
+	double diff;
+	diff =1e6 * (double)(now.tv_sec - start.tv_sec) + (double)(now.tv_usec - start.tv_usec);
+	diff /= 1000;
+	return ((long int) diff);
+}
+
 void think(t_philo *philo)
 {
-	printf("philo %d is thinking\n", philo->id);
+	message(THINKING, get_stamp(philo->sim_start),philo->id);
 	philo->state = EATING;
 }
 
@@ -14,22 +40,28 @@ void eat(t_philo *philo)
 {
 	int	left_philo;
 	t_philo	*left_philo_ptr;
+	struct timeval	now;
 
 	left_philo = philo->id % philo->sim_params->n_philo + 1;
 	left_philo_ptr = &philo->head[left_philo-1];
 
-//	printf("philo id:%d\t philo address:%p\tleft_philo id:%d\tleft philo address:%p\n", philo->id,philo, left_philo, left_philo_ptr);
 	if (philo->id % 2 == 0)
 	{
 		pthread_mutex_lock(philo->right_fork);
+		message(FORK, get_stamp(philo->sim_start),philo->id);
 		pthread_mutex_lock(left_philo_ptr->right_fork);
+		message(FORK,get_stamp(philo->sim_start),philo->id);
 	}
 	else
 	{
 		pthread_mutex_lock(left_philo_ptr->right_fork);
+		message(FORK,get_stamp(philo->sim_start),philo->id);
 		pthread_mutex_lock(philo->right_fork);
+		message(FORK,get_stamp(philo->sim_start),philo->id);
 	}
-	printf("philo %d is eating\n", philo->id);
+	message(EATING,get_stamp(philo->sim_start),philo->id);
+	gettimeofday(&now,NULL);
+	philo->last_eat = now;
 	usleep(philo->sim_params->tteat * 1000);
 	if (philo->id % 2 == 0)
 	{
@@ -46,7 +78,7 @@ void eat(t_philo *philo)
 
 void sleeping(t_philo *philo)
 {
-	printf("philo %d is sleeping\n", philo->id);
+	message(SLEEPING,get_stamp(philo->sim_start),philo->id);
 	usleep(philo->sim_params->ttsleep * 1000);
 	philo->state = THINKING;
 }
@@ -54,21 +86,11 @@ void sleeping(t_philo *philo)
 void	*philosopher(void *arg)
 {
 	t_philo		*philo;
-//	t_args		*sim_params;
-	struct timeval	now;
-	int time;
+
+
 	philo = (t_philo *)arg;
-//	pthread_mutex_lock(philo->right_fork);
-//	printf("philo %d %ld here\n",philo->id, philo->philo_id);
-//	sleep(1);
-//	pthread_mutex_unlock(philo->right_fork);
-//	printf("philo %ld dies\n", philo->philo_id);
-	//	sim_params = philo->sim_params;
 	while (philo->live)
 	{
-		gettimeofday(&now, NULL);
-		time = (now.tv_sec - philo->last_eat.tv_sec) * 1000 + (now.tv_usec - philo->last_eat.tv_usec) / 1000;
-		printf("[%d]\t",time);
 		if (philo->state == THINKING)
 			think(philo);
 		else if (philo->state == EATING)
@@ -83,11 +105,13 @@ int	simulation(t_args *sim_params)
 {
 	t_philo		*philo;
 	int			i;
+	struct timeval	start;
 
 	philo = malloc(sizeof(t_philo) * sim_params->n_philo);
 	if (!philo)
 		return (-1);
 	i = 0;
+	gettimeofday(&start,NULL);
 	while (i < sim_params->n_philo)
 	{
 		philo[i].n_eat = 0;
@@ -95,25 +119,20 @@ int	simulation(t_args *sim_params)
 		philo[i].id = i + 1;
 		philo[i].sim_params = sim_params;
 		philo[i].head = philo;
+		philo[i].sim_start = start;
 		gettimeofday(&philo[i].last_eat, NULL);
 		philo[i].state = THINKING;
 		philo[i].right_fork = malloc(sizeof(pthread_mutex_t));
-		philo[i].message = malloc(sizeof(pthread_mutex_t));
 		philo[i].alive_monitor = malloc(sizeof(pthread_mutex_t));
-		if (!philo[i].right_fork || !philo[i].message || !philo[i].alive_monitor)
+		if (!philo[i].right_fork || !philo[i].alive_monitor)
 			return (-1);
 		pthread_mutex_init(philo[i].right_fork, NULL);
-		pthread_mutex_init(philo[i].message, NULL);
 		pthread_mutex_init(philo[i].alive_monitor, NULL);
-		printf("philo %d\t address:%p\n", philo[i].id, &philo[i]);
 		i++;
 	}
 	i = 0;
-	while (i < sim_params->n_philo)
-	{
-		pthread_create(&philo[i].philo_id, NULL, philosopher, &philo[i]);
-		i++;
-	}
+	while (i ++ < sim_params->n_philo)
+		pthread_create(&philo[i-1].philo_id, NULL, philosopher, &philo[i-1]);
 	sleep(10);
 	return (0);
 }

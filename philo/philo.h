@@ -31,7 +31,8 @@ typedef enum e_state
 	THINKING,
 	EATING,
 	SLEEPING,
-	DEAD
+	DEAD,
+	FORK
 } t_state;
 typedef struct s_philo
 {
@@ -40,12 +41,12 @@ typedef struct s_philo
 	pthread_t		philo_id;
 	int				id;
 	pthread_mutex_t	*right_fork;
-	pthread_mutex_t	*message;
 	pthread_mutex_t	*alive_monitor;
 	int				live;
 	int				eat_count;
 	int				n_eat;
 	struct timeval	last_eat;
+	struct timeval	sim_start;
 	t_state			state;
 }	t_philo;
 
