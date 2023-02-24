@@ -42,6 +42,7 @@ typedef struct s_philo
 	int				id;
 	pthread_mutex_t	*right_fork;
 	pthread_mutex_t	*alive_monitor;
+	pthread_mutex_t	*message;
 	int				live;
 	int				eat_count;
 	int				n_eat;
