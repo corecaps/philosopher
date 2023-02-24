@@ -1,2 +1,22 @@
 # philosopher
 dining philosopher problem
+
+
+    
+
+
+E = 50
+S = 50
+T = 100
+
+eat : 100
+sleep : 200
+
+P1:EESSSSEESSSSEE // SLEEP IS SUPERIOR THAN EAT
+P2:TTEESSSSEESSSS
+
+P1:EEEE|SSTT|EEEE| // EAT IS SUPERIOR THAN SLEEP
+P2:TTTT|EEEE|SSTT|
+
+P1:EE|SS|EE|SS|EE|  // EAT IS EQUALS TO SLEEP
+P2:TT|EE|SS|EE|SS|

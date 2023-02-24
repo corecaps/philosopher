@@ -231,7 +231,9 @@ int	simulation(t_args *sim_params)
 	}
 	i = 0;
 	while (i ++ < sim_params->n_philo)
+	{
 		pthread_create(&philo[i-1].philo_id, NULL, philosopher, &philo[i-1]);
+	}
 	pthread_create(&alive_mon,NULL,alive_monitor,data);
 	sleep(10);
 	i = 0;
