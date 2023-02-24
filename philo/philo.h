@@ -49,7 +49,11 @@ typedef struct s_philo
 	struct timeval	sim_start;
 	t_state			state;
 }	t_philo;
-
+typedef struct s_data
+{
+	t_philo	*head_philo;
+	t_args	*sim_param;
+}t_data;
 int	ft_atoi(char *str);
 int	simulation(t_args *sim_params);
 #endif
