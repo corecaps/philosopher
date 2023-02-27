@@ -33,7 +33,8 @@ static int init_args(int argc, char **argv, t_args *args)
 	if (argc == 6)
 		args->n_eat = atoi(argv[5]);
 	else
-		args->n_eat = -1;
+		args->n_eat = INT_MAX;
+	args->alive = 1;
 	return 0;
 }
 

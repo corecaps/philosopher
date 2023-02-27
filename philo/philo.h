@@ -17,6 +17,7 @@
 # include <stdlib.h>
 # include <sys/time.h>
 # include <stdio.h>
+# include <limits.h>
 
 typedef struct s_args
 {
@@ -25,6 +26,7 @@ typedef struct s_args
 	int	tteat;
 	int	ttsleep;
 	int	n_eat;
+	int	alive;
 }	t_args;
 typedef enum e_state
 {

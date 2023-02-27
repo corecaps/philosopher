@@ -12,8 +12,10 @@
 
 #include "philo.h"
 
-void message(enum e_state action, long int stamp, int id)
+void message(enum e_state action, long int stamp, int id, int alive)
 {
+	if (alive == 0)
+		return ;
 	if (action < THINKING || action > FORK || stamp < 0 || id < 0)
 		return ;
 	if (action == EATING)
@@ -42,7 +44,7 @@ long int get_stamp(struct timeval start)
 void think(t_philo *philo)
 {
 	pthread_mutex_lock(philo->message);
-	message(THINKING, get_stamp(philo->sim_start),philo->id);
+	message(THINKING, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
 	pthread_mutex_unlock(philo->message);
 	philo->state = EATING;
 }
@@ -57,7 +59,7 @@ void eat(t_philo *philo)
 	left_philo_ptr = &philo->head[left_philo-1];
 
 	pthread_mutex_lock(philo->alive_monitor);
-	if (philo->live == 0)
+	if (philo->sim_params->alive == 0)
 	{
 		pthread_mutex_unlock(philo->alive_monitor);
 		return;
@@ -69,11 +71,11 @@ void eat(t_philo *philo)
 //		pthread_mutex_lock(philo->alive_monitor);
 //		if (philo->live > 0)
 		pthread_mutex_lock(philo->message);
-			message(FORK, get_stamp(philo->sim_start),philo->id);
+		message(FORK, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
 		pthread_mutex_unlock(philo->message);
 //		pthread_mutex_unlock(philo->alive_monitor);
 		pthread_mutex_lock(left_philo_ptr->right_fork);
-		message(FORK,get_stamp(philo->sim_start),philo->id);
+		message(FORK, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
 	}
 	else
 	{
@@ -83,16 +85,17 @@ void eat(t_philo *philo)
 //			message(FORK,get_stamp(philo->sim_start),philo->id);
 //		pthread_mutex_unlock(philo->alive_monitor);
 		pthread_mutex_lock(philo->right_fork);
-		message(FORK,get_stamp(philo->sim_start),philo->id);
+		message(FORK, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
 	}
 
 	pthread_mutex_lock(philo->alive_monitor);
 //	if (philo->live > 0)
 	pthread_mutex_lock(philo->message);
-		message(EATING,get_stamp(philo->sim_start),philo->id);
+	message(EATING, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
 	pthread_mutex_unlock(philo->message);
 	gettimeofday(&now,NULL);
 	philo->last_eat = now;
+	philo->eat_count ++;
 	pthread_mutex_unlock(philo->alive_monitor);
 	usleep(philo->sim_params->tteat * 1000);
 	if (philo->id % 2 == 0)
@@ -110,11 +113,30 @@ void eat(t_philo *philo)
 
 void sleeping(t_philo *philo)
 {
+	long int	time;
+	long int	ttthink;
+
 	pthread_mutex_lock(philo->message);
-	message(SLEEPING,get_stamp(philo->sim_start),philo->id);
+	message(SLEEPING, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
+	time = get_stamp(philo->last_eat);
+	if (philo->sim_params->tteat < philo->sim_params->ttsleep)
+		ttthink = 0;
+	else
+		ttthink = philo->sim_params->tteat - philo->sim_params->ttsleep;
+//	printf("ttdie : %d prevision:%ld \n",philo->sim_params->ttdie, time + philo->sim_params->ttsleep + ttthink);
+	if ((time + philo->sim_params->ttsleep + ttthink) > philo->sim_params->ttdie)
+	{
+		usleep((philo->sim_params->ttdie - time) * 1000);
+		message(DEAD, get_stamp(philo->sim_start), philo->id, philo->sim_params->alive);
+		philo->live = 0;
+		philo->sim_params->alive = 0;
+	}
+	else
+	{
+		usleep(philo->sim_params->ttsleep * 1000);
+		philo->state = THINKING;
+	}
 	pthread_mutex_unlock(philo->message);
-	usleep(philo->sim_params->ttsleep * 1000);
-	philo->state = THINKING;
 }
 
 void	*philosopher(void *arg)
@@ -124,9 +146,8 @@ void	*philosopher(void *arg)
 
 	philo = (t_philo *)arg;
 	pthread_mutex_lock(philo->alive_monitor);
-	while (philo->live)
+	while (philo->live && philo->sim_params->alive && (philo->eat_count < philo->n_eat) )
 	{
-//		printf("live :%d\n",philo->live);
 		if (philo->state == THINKING && philo->live)
 		{
 			pthread_mutex_unlock(philo->alive_monitor);
@@ -147,51 +168,49 @@ void	*philosopher(void *arg)
 	pthread_mutex_unlock(philo->alive_monitor);
 	return (NULL);
 }
-
-void	*alive_monitor(void *arg)
-{
-	int				i;
-	int				running;
-	t_data			*data;
-	long int		stamp;
-	int				j;
-
-	data = (t_data *) arg;
-	running = 1;
-	while (running)
-	{
-		i = 0;
-		while (i < data->sim_param->n_philo)
-		{
-			pthread_mutex_lock((data->head_philo+i)->alive_monitor);
-			stamp = get_stamp((data->head_philo+i)->last_eat);
-//			printf("[Philo_%d] last_meal %ld\t ttdie %d\n",i+1,stamp,data->sim_param->ttdie);
-			if (stamp > data->sim_param->ttdie)
-			{
-				(data->head_philo+i)->live = 0;
-				pthread_mutex_unlock((data->head_philo+i)->alive_monitor);
-				stamp = get_stamp((data->head_philo+i)->sim_start);
-				message(DEAD,stamp,i+1);
-				j = 0;
-				while (j < data->sim_param->n_philo)
-				{
-					pthread_mutex_lock((data->head_philo + j)->alive_monitor);
-					(data->head_philo + j)->live = 0;
-//					printf("philo off:%d\n",j + 1);
-					pthread_mutex_unlock((data->head_philo + j)->alive_monitor);
-					j ++;
-				}
-				running = 0;
-				break;
-			}
-			else
-				pthread_mutex_unlock((data->head_philo+i)->alive_monitor);
-			i ++;
-		}
-		usleep((data->sim_param->ttdie / 2));
-	}
-	return (NULL);
-}
+//
+//void	*alive_monitor(void *arg)
+//{
+//	int				i;
+//	int				running;
+//	t_data			*data;
+//	long int		stamp;
+//	int				j;
+//
+//	data = (t_data *) arg;
+//	running = 1;
+//	while (running)
+//	{
+//		i = 0;
+//		while (i < data->sim_param->n_philo)
+//		{
+//			pthread_mutex_lock((data->head_philo+i)->alive_monitor);
+//			stamp = get_stamp((data->head_philo+i)->last_eat);
+//			if (stamp > data->sim_param->ttdie)
+//			{
+//				(data->head_philo+i)->live = 0;
+//				pthread_mutex_unlock((data->head_philo+i)->alive_monitor);
+//				stamp = get_stamp((data->head_philo+i)->sim_start);
+//				message(DEAD,stamp,i+1);
+//				j = 0;
+//				while (j < data->sim_param->n_philo)
+//				{
+//					pthread_mutex_lock((data->head_philo + j)->alive_monitor);
+//					(data->head_philo + j)->live = 0;
+//					pthread_mutex_unlock((data->head_philo + j)->alive_monitor);
+//					j ++;
+//				}
+//				running = 0;
+//				break;
+//			}
+//			else
+//				pthread_mutex_unlock((data->head_philo+i)->alive_monitor);
+//			i ++;
+//		}
+//		usleep((data->sim_param->ttdie / 2));
+//	}
+//	return (NULL);
+//}
 
 int	simulation(t_args *sim_params)
 {
@@ -199,7 +218,7 @@ int	simulation(t_args *sim_params)
 	int			i;
 	struct timeval	start;
 	t_data		*data;
-	pthread_t	alive_mon;
+//	pthread_t	alive_mon;
 
 	philo = malloc(sizeof(t_philo) * sim_params->n_philo);
 	data = malloc(sizeof(t_data));
@@ -211,14 +230,18 @@ int	simulation(t_args *sim_params)
 	data->sim_param = sim_params;
 	while (i < sim_params->n_philo)
 	{
-		philo[i].n_eat = 0;
 		philo[i].live = 1;
 		philo[i].id = i + 1;
 		philo[i].sim_params = sim_params;
 		philo[i].head = philo;
 		philo[i].sim_start = start;
+		philo[i].eat_count = 0;
+		philo[i].n_eat = sim_params->n_eat;
 		gettimeofday(&philo[i].last_eat, NULL);
-		philo[i].state = THINKING;
+		if (i % 2 == 0)
+			philo[i].state = EATING;
+		else
+			philo[i].state = SLEEPING;
 		philo[i].right_fork = malloc(sizeof(pthread_mutex_t));
 		philo[i].alive_monitor = malloc(sizeof(pthread_mutex_t));
 		philo[i].message = malloc(sizeof(pthread_mutex_t));
@@ -234,22 +257,13 @@ int	simulation(t_args *sim_params)
 	{
 		pthread_create(&philo[i-1].philo_id, NULL, philosopher, &philo[i-1]);
 	}
-	pthread_create(&alive_mon,NULL,alive_monitor,data);
-	sleep(10);
-	i = 0;
-	while (i < sim_params->n_philo)
-	{
-		pthread_mutex_lock(philo[i].alive_monitor);
-		philo[i].live = 0;
-		pthread_mutex_unlock(philo[i].alive_monitor);
-		i++;
-	}
+//	pthread_create(&alive_mon,NULL,alive_monitor,data);
 	i = 0;
 	while (i < sim_params->n_philo)
 	{
 		pthread_join(philo[i].philo_id, NULL);
 		i++;
 	}
-	pthread_join(alive_mon,NULL);
+//	pthread_join(alive_mon,NULL);
 	return (0);
 }
