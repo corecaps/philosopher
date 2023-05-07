@@ -25,8 +25,9 @@ typedef struct s_args
 	int	ttdie;
 	int	tteat;
 	int	ttsleep;
-	int	n_eat;
+	int	max_eat;
 	int	alive;
+	pthread_mutex_t	*message;
 }	t_args;
 typedef enum e_state
 {
@@ -38,25 +39,24 @@ typedef enum e_state
 } t_state;
 typedef struct s_philo
 {
-	t_args			*sim_params;
-	struct s_philo			*head;
 	pthread_t		philo_id;
-	int				id;
 	pthread_mutex_t	*right_fork;
-	pthread_mutex_t	*alive_monitor;
+	pthread_mutex_t	*left_fork;
+	pthread_mutex_t	*live_check;
 	pthread_mutex_t	*message;
+	int				id;
 	int				live;
 	int				eat_count;
 	int				n_eat;
+	int				max_eat;
+	int 			ttdie;
+	int				tteat;
+	int				ttsleep;
 	struct timeval	last_eat;
 	struct timeval	sim_start;
 	t_state			state;
 }	t_philo;
-typedef struct s_data
-{
-	t_philo	*head_philo;
-	t_args	*sim_param;
-}t_data;
+
 int	ft_atoi(char *str);
 int	simulation(t_args *sim_params);
 #endif
