@@ -28,6 +28,7 @@ typedef struct s_args
 	int	max_eat;
 	int	alive;
 	pthread_mutex_t	*message;
+    pthread_mutex_t *live_check;
 }	t_args;
 typedef enum e_state
 {
@@ -45,13 +46,13 @@ typedef struct s_philo
 	pthread_mutex_t	*live_check;
 	pthread_mutex_t	*message;
 	int				id;
-	int				live;
-	int				eat_count;
+	int				*live;
 	int				n_eat;
 	int				max_eat;
 	int 			ttdie;
 	int				tteat;
 	int				ttsleep;
+    int             n_philo;
 	struct timeval	last_eat;
 	struct timeval	sim_start;
 	t_state			state;
