@@ -34,7 +34,7 @@ static int init_args(int argc, char **argv, t_args *args)
 		args->max_eat = atoi(argv[5]);
 	else
 		args->max_eat = INT_MAX;
-	args->alive = 1;
+	args->running = 1;
 	return 0;
 }
 

@@ -31,3 +31,51 @@ int	ft_atoi(char *str)
 	else
 		return (result);
 }
+
+void message(enum e_state action, long int stamp, int id, int alive, pthread_mutex_t *message)
+{
+	if (alive == 0)
+		return ;
+	if (action < THINKING || action > FORK || stamp < 0 || id < 0)
+		return ;
+	pthread_mutex_lock(message);
+	if (action == EATING)
+		printf("%ld %d is eating\n", stamp, id);
+	else if (action == SLEEPING)
+		printf("%ld %d is sleeping\n", stamp, id);
+	else if (action == THINKING)
+		printf("%ld %d is thinking\n", stamp, id);
+	else if (action == DEAD)
+		printf("%ld %d died\n", stamp, id);
+	else if (action == FORK)
+		printf("%ld %d has taken a fork\n", stamp, id);
+	pthread_mutex_unlock(message);
+}
+
+long int get_stamp(struct timeval start)
+{
+	struct timeval	now;
+	double diff;
+
+	gettimeofday(&now,NULL);
+	diff =1e6 * (double)(now.tv_sec - start.tv_sec) + (double)(now.tv_usec - start.tv_usec);
+	diff /= 1000;
+	return ((long int) diff);
+}
+
+void clean(t_args *sim_params, t_philo *philo) {
+	int i;
+
+	i = 0;
+	while (i < sim_params->n_philo)
+	{
+		pthread_mutex_destroy(philo[i].right_fork);
+		free(philo[i].right_fork);
+		i++;
+	}
+	pthread_mutex_destroy(sim_params->message);
+	pthread_mutex_destroy(sim_params->live_check);
+	free(sim_params->message);
+	free(sim_params->live_check);
+	free(philo);
+}

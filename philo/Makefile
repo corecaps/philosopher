@@ -13,7 +13,7 @@
 NAME = philo
 CC = gcc
 CFLAGS = -Wall -Wextra -Werror
-SRC = main.c utils.c simulation.c
+SRC = main.c utils.c simulation.c actions.c
 OBJ = $(SRC:.c=.o)
 
 all: $(NAME)

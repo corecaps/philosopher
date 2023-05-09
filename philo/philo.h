@@ -26,7 +26,7 @@ typedef struct s_args
 	int	tteat;
 	int	ttsleep;
 	int	max_eat;
-	int	alive;
+	int	running;
 	pthread_mutex_t	*message;
     pthread_mutex_t *live_check;
 }	t_args;
@@ -43,10 +43,10 @@ typedef struct s_philo
 	pthread_t		philo_id;
 	pthread_mutex_t	*right_fork;
 	pthread_mutex_t	*left_fork;
-	pthread_mutex_t	*live_check;
+	pthread_mutex_t	*run_state_check;
 	pthread_mutex_t	*message;
 	int				id;
-	int				*live;
+	int				*sim_running;
 	int				n_eat;
 	int				max_eat;
 	int 			ttdie;
@@ -58,6 +58,12 @@ typedef struct s_philo
 	t_state			state;
 }	t_philo;
 
-int	ft_atoi(char *str);
-int	simulation(t_args *sim_params);
+int			ft_atoi(char *str);
+int			simulation(t_args *sim_params);
+void		message(enum e_state action, long int stamp, int id, int alive, pthread_mutex_t *message);
+long int	get_stamp(struct timeval start);
+void		think(t_philo *philo);
+void		eat(t_philo *philo);
+void		sleeping(t_philo *philo);
+void		clean(t_args *sim_params, t_philo *philo);
 #endif
